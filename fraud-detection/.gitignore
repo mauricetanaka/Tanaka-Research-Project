@@ -1,0 +1,22 @@
+# ==========================================
+# Python & Environment
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+venv/
+env/
+
+# jupyter notebook checkpoints
+.ipynb_checkpoints
+
+# paysim dataset files
+data/*.csv
+data/*.zip
+
+# 
+models/*.pkl
+results/metrics/*.json
+results/plots/*.png
