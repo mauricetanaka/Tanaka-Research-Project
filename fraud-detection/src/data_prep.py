@@ -9,9 +9,7 @@ from config import (
 )
 from utils import info, warn, success, step
 
-# ─────────────────────────────────────────────────────────────
-# 1. LOAD
-# ─────────────────────────────────────────────────────────────
+# 1. Loading data
 
 def load_data() -> pd.DataFrame:
     """
@@ -71,17 +69,19 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     df = df.copy()
 
-    df['orig_balance_delta'] = (
-        df['newbalanceOrig'] - (df['oldbalanceOrg'] - df['amount'])
-    )
+    # --- COMMENTED OUT TO PREVENT REVERSE-ENGINEERING THE SIMULATOR ---
+    # df['orig_balance_delta'] = (
+    #     df['newbalanceOrig'] - (df['oldbalanceOrg'] - df['amount'])
+    # )
 
-    df['dest_balance_delta'] = (
-        df['newbalanceDest'] - (df['oldbalanceDest'] + df['amount'])
-    )
+    # df['dest_balance_delta'] = (
+    #     df['newbalanceDest'] - (df['oldbalanceDest'] + df['amount'])
+    # )
 
-    df['orig_zeroed_out'] = (
-        ((df['newbalanceOrig'] == 0) & (df['oldbalanceOrg'] > 0)).astype(int)
-    )
+    # df['orig_zeroed_out'] = (
+    #     ((df['newbalanceOrig'] == 0) & (df['oldbalanceOrg'] > 0)).astype(int)
+    # )
+    # ------------------------------------------------------------------
 
     df['amount_to_orig_balance_ratio'] = (
         df['amount'] / (df['oldbalanceOrg'] + 1)
@@ -90,8 +90,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df['hour_of_day'] = df['step'] % 24
 
     info("Engineered features added:")
-    info("  orig_balance_delta, dest_balance_delta,")
-    info("  orig_zeroed_out, amount_to_orig_balance_ratio, hour_of_day")
+    info("  amount_to_orig_balance_ratio, hour_of_day")
 
     return df
 
