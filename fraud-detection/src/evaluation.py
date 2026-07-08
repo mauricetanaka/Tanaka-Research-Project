@@ -13,6 +13,7 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
     accuracy_score,
+    average_precision_score
 )
 
 from config import ADMIN_FEE_RANDS
@@ -35,6 +36,7 @@ def compute_standard_metrics(y_true: np.ndarray, y_pred: np.ndarray,
         "recall":    round(float(recall_score(y_true, y_pred, zero_division=0)), 6),
         "f1_score":  round(float(f1_score(y_true, y_pred, zero_division=0)), 6),
         "roc_auc":   round(float(roc_auc_score(y_true, y_proba)), 6),
+        "pr_auc":    round(float(average_precision_score(y_true, y_proba)), 6),
         "confusion_matrix": {
             "tn": int(tn), "fp": int(fp),
             "fn": int(fn), "tp": int(tp)
@@ -237,6 +239,7 @@ def evaluate(model, X_test, y_test, amounts_test,
     print(f"  Recall     : {std['recall']:.4f}")
     print(f"  F1-Score   : {std['f1_score']:.4f}")
     print(f"  ROC-AUC    : {std['roc_auc']:.4f}")
+    print(f"  PR-AUC     : {std['pr_auc']:.4f}   ← KEY METRIC")
     print(f"\n  Confusion Matrix:")
     print(f"                Predicted 0    Predicted 1")
     print(f"  Actual 0  :  {tn:>12,}   {fp:>12,}   (TN / FP)")

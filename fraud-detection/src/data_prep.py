@@ -11,6 +11,7 @@ from utils import info, warn, success, step
 
 # 1. Loading data
 
+
 def load_data() -> pd.DataFrame:
     """
     Load the PaySim CSV from the path defined in config.py.
@@ -42,6 +43,17 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     # Drop non-predictive columns and identifiers to prevent Data Leakage
     df.drop(columns=COLS_TO_DROP, errors='ignore', inplace=True)
 
+    # --- SANITY CHECK ---
+    if 'newbalanceOrig' in df.columns:
+        warn("WARNING: newbalanceOrig is STILL in the dataframe!")
+    else:
+        success("SUCCESS: Post-transaction balances successfully dropped.")
+
+    if 'newbalanceDest' in df.columns:
+        warn("WARNING: newbalanceDest is STILL in the dataframe!")
+    else:
+        success("SUCCESS: Post-transaction balances successfully dropped.")
+
     # Drop null rows
     before = len(df)
     df.dropna(inplace=True)
@@ -53,7 +65,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
     # One-Hot Encoding.
     df = pd.get_dummies(df, columns=[CATEGORY_COL], dtype=int)
-    
+
     # Extract the new one-hot column names to display them
     encoded_cols = [c for c in df.columns if c.startswith(f"{CATEGORY_COL}_")]
     info(f"Applied One-Hot Encoding. New columns: {encoded_cols}")
@@ -63,37 +75,25 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
 # 3. Feature selection(engineering)
 
+
+# 3. Feature selection(engineering)
+
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Add engineered features that capture fraud-relevant signals.
-    """
     df = df.copy()
 
-    # --- COMMENTED OUT TO PREVENT REVERSE-ENGINEERING THE SIMULATOR ---
-    # df['orig_balance_delta'] = (
-    #     df['newbalanceOrig'] - (df['oldbalanceOrg'] - df['amount'])
-    # )
-
-    # df['dest_balance_delta'] = (
-    #     df['newbalanceDest'] - (df['oldbalanceDest'] + df['amount'])
-    # )
-
-    # df['orig_zeroed_out'] = (
-    #     ((df['newbalanceOrig'] == 0) & (df['oldbalanceOrg'] > 0)).astype(int)
-    # )
+    # --- ALL DETERMINISTIC SIMULATOR FEATURES COMMENTED OUT ---
+    # df['orig_balance_delta'] = ...
+    # df['dest_balance_delta'] = ...
+    # df['orig_zeroed_out'] = ...
+    # df['amount_to_orig_balance_ratio'] = (df['amount'] / (df['oldbalanceOrg'] + 1))
     # ------------------------------------------------------------------
-
-    df['amount_to_orig_balance_ratio'] = (
-        df['amount'] / (df['oldbalanceOrg'] + 1)
-    )
 
     df['hour_of_day'] = df['step'] % 24
 
     info("Engineered features added:")
-    info("  amount_to_orig_balance_ratio, hour_of_day")
+    info("  hour_of_day") # Updated log
 
     return df
-
 
 # 4. Train Test split
 
@@ -105,7 +105,7 @@ def split_data(df: pd.DataFrame):
     # Dynamically select all features except the target
     X = df.drop(columns=[TARGET_COL])
     y = df[TARGET_COL]
-    
+
     # Keep an isolated copy of the transaction amounts for the Cost Matrix evaluator
     amounts = df['amount']
 
@@ -137,12 +137,15 @@ def apply_smote(X_train: pd.DataFrame, y_train: pd.Series):
     after_legit = (y_resampled == 0).sum()
     after_fraud = (y_resampled == 1).sum()
 
-    info(f"Before SMOTE — Legitimate: {before_legit:,}  |  Fraud: {before_fraud:,}")
-    info(f"After  SMOTE — Legitimate: {after_legit:,}  |  Fraud: {after_fraud:,}")
+    info(
+        f"Before SMOTE — Legitimate: {before_legit:,}  |  Fraud: {before_fraud:,}")
+    info(
+        f"After  SMOTE — Legitimate: {after_legit:,}  |  Fraud: {after_fraud:,}")
 
     return X_resampled, y_resampled
 
 # 6. full pipeline in one call
+
 
 def prepare_data(apply_smote_flag: bool = True):
     """
@@ -150,15 +153,16 @@ def prepare_data(apply_smote_flag: bool = True):
     """
     step(1, 4, "Loading raw data")
     df = load_data()
-    
+
     step(2, 4, "Cleaning & Encoding")
     df = clean_data(df)
-    
+
     step(3, 4, "Engineering Features")
     df = engineer_features(df)
 
     step(4, 4, "Splitting & Oversampling")
-    X_train, X_test, y_train, y_test, amounts_train, amounts_test = split_data(df)
+    X_train, X_test, y_train, y_test, amounts_train, amounts_test = split_data(
+        df)
 
     if apply_smote_flag:
         X_train_res, y_train_res = apply_smote(X_train, y_train)

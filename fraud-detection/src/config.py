@@ -31,7 +31,11 @@ TARGET_COL = "isFraud"
 COLS_TO_DROP = [
     "nameOrig",
     "nameDest",
-    "isFlaggedFraud"
+    "isFlaggedFraud",
+    # Dropping post-transaction balances to prevent the baseline
+    # from reverse-engineering PaySim's deterministic account-draining logic.
+    "newbalanceOrig",
+    "newbalanceDest"
 ]
 
 # The categorical column that needs One-Hot Encoding
@@ -42,9 +46,7 @@ NUMERIC_COLS = [
     "step",
     "amount",
     "oldbalanceOrg",
-    "newbalanceOrig",
-    "oldbalanceDest",
-    "newbalanceDest"
+    "oldbalanceDest"
 ]
 
 # Engineered features to be created in data_prep.py
@@ -55,7 +57,7 @@ ENGINEERED_FEATURES = [
     # "dest_balance_delta",
     # "orig_zeroed_out",
     # ------------------------------------------------------------------
-    "amount_to_orig_balance_ratio"
+    # Removed to prevent reverse-engineering the simulator: "amount_to_orig_balance_ratio"
 ]
 
 # Final list of continuous features (numeric + engineered)
@@ -78,12 +80,14 @@ ADMIN_FEE_RANDS = 50.0
 # 6. Modeling Parameters
 XGBOOST_PARAMS = {
     #  These hyperparameters are intentionally set to suboptimal values to create a weak baseline model. a powerful model with optimized hyperparameters would achieve much higher scores, but this is meant to be a starting point for improvement in Phases 2 and 3. Paysim data is simulated and not as complex as real-world data, so even a simple model can achieve decent performance. Paysim data is also small, so even a simple model can learn from it quickly and att the same time a model can reverse-engineer the simulator. The goal here is to have a baseline that is good enough to learn from, but still leaves significant room for improvement when we implement the more advanced techniques in the next phases.
-    "n_estimators": 50,      # Dropped from 300 to 50 (forces it to stop learning early)
-    "max_depth": 3,          # Dropped from 6 to 3 (stops it from building complex rules)
+    # Dropped from 300 to 50 (forces it to stop learning early)
+    "n_estimators": 50,
+    # Dropped from 6 to 3 (stops it from building complex rules)
+    "max_depth": 3,
     "learning_rate": 0.05,   # Slowed down so it can't optimize as fast
     "subsample": 0.8,
     "colsample_bytree": 0.8,
     "eval_metric": "logloss",
     "random_state": RANDOM_STATE,
-    "n_jobs": -1,  
+    "n_jobs": -1,
 }
