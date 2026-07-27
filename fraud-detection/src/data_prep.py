@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 from imblearn.over_sampling import SMOTE
 
 from config import (
@@ -10,105 +11,60 @@ from config import (
 from utils import info, warn, success, step
 
 # 1. Loading data
-
-
 def load_data() -> pd.DataFrame:
     """
-    Load the PaySim CSV from the path defined in config.py.
+    The function loads the PaySim CSV from the specified path.
     """
     if not PAYSIM_FILE.exists():
         raise FileNotFoundError(
             f"\n❌ Dataset not found at '{PAYSIM_FILE}'.\n"
-            "   Download from: https://www.kaggle.com/datasets/ealaxi/paysim1\n"
-            "   Place the file at: data/paysim.csv"
         )
 
     df = pd.read_csv(PAYSIM_FILE)
     info(f"Loaded: {df.shape[0]:,} rows × {df.shape[1]} columns")
     info(f"Fraud rate: {df[TARGET_COL].mean()*100:.4f}% "
          f"({df[TARGET_COL].sum():,} fraudulent transactions)")
-    info(f"Transaction types: {sorted(df[CATEGORY_COL].unique().tolist())}")
     return df
 
-
-# 2. data cleaning
-
+# 2. Data cleaning
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Drop irrelevant columns, handle nulls, and apply One-Hot Encoding
-    to the categorical transaction type column.
+    The function drops irrelevant columns and applies Label Encoding 
+    to replicate the methodology of Batsyas and Yaduwanshi (2026).
     """
     df = df.copy()
 
-    # Drop non-predictive columns and identifiers to prevent Data Leakage
+    # The algorithm drops non-predictive columns and identifiers as specified in the reference study.
     df.drop(columns=COLS_TO_DROP, errors='ignore', inplace=True)
 
-    # --- SANITY CHECK ---
-    if 'newbalanceOrig' in df.columns:
-        warn("WARNING: newbalanceOrig is STILL in the dataframe!")
-    else:
-        success("SUCCESS: Post-transaction balances successfully dropped.")
-
-    if 'newbalanceDest' in df.columns:
-        warn("WARNING: newbalanceDest is STILL in the dataframe!")
-    else:
-        success("SUCCESS: Post-transaction balances successfully dropped.")
-
-    # Drop null rows
+    # The script drops any remaining null rows to ensure mathematical stability.
     before = len(df)
     df.dropna(inplace=True)
     dropped = before - len(df)
     if dropped:
         warn(f"Dropped {dropped:,} null rows")
-    else:
-        info("No null rows found")
 
-    # One-Hot Encoding.
-    df = pd.get_dummies(df, columns=[CATEGORY_COL], dtype=int)
-
-    # Extract the new one-hot column names to display them
-    encoded_cols = [c for c in df.columns if c.startswith(f"{CATEGORY_COL}_")]
-    info(f"Applied One-Hot Encoding. New columns: {encoded_cols}")
-
-    info(f"Clean dataset: {df.shape[0]:,} rows")
+    # The algorithm applies Label Encoding to the categorical transaction type column,
+    # replicating Section 2.3.2 of the reference study.
+    le = LabelEncoder()
+    df[CATEGORY_COL] = le.fit_transform(df[CATEGORY_COL])
+    
+    info(f"Applied Label Encoding to '{CATEGORY_COL}' column.")
+    info(f"Final feature set contains {df.shape[1] - 1} predictors.")
     return df
 
-# 3. Feature selection(engineering)
-
-
-# 3. Feature selection(engineering)
-
-def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-
-    # --- ALL DETERMINISTIC SIMULATOR FEATURES COMMENTED OUT ---
-    # df['orig_balance_delta'] = ...
-    # df['dest_balance_delta'] = ...
-    # df['orig_zeroed_out'] = ...
-    # df['amount_to_orig_balance_ratio'] = (df['amount'] / (df['oldbalanceOrg'] + 1))
-    # ------------------------------------------------------------------
-
-    df['hour_of_day'] = df['step'] % 24
-
-    info("Engineered features added:")
-    info("  hour_of_day") # Updated log
-
-    return df
-
-# 4. Train Test split
-
+# 3. Train Test split
 def split_data(df: pd.DataFrame):
     """
-    Stratified split to preserve fraud ratios. Extracts 'amount' separately 
-    for the Savings Score metric.
+    The function performs a stratified 90:10 split to preserve fraud ratios.
     """
-    # Dynamically select all features except the target
     X = df.drop(columns=[TARGET_COL])
     y = df[TARGET_COL]
 
-    # Keep an isolated copy of the transaction amounts for the Cost Matrix evaluator
+    # The script isolates a copy of the transaction amounts for the Cost Matrix evaluator.
     amounts = df['amount']
 
+    # The algorithm splits the data using a 90:10 ratio (Batsyas and Yaduwanshi, 2026).
     X_train, X_test, y_train, y_test, amounts_train, amounts_test = train_test_split(
         X, y, amounts,
         test_size=TEST_SIZE,
@@ -118,15 +74,14 @@ def split_data(df: pd.DataFrame):
 
     info(f"Train set: {X_train.shape[0]:,} rows  |  Fraud: {y_train.sum():,}")
     info(f"Test set:  {X_test.shape[0]:,} rows  |  Fraud: {y_test.sum():,}")
-    warn("Test set remains UNTOUCHED throughout training — no data leakage.")
+    warn("The test set remains completely untouched to prevent data leakage.")
 
     return X_train, X_test, y_train, y_test, amounts_train, amounts_test
 
-
-# 5. SMOTE
+# 4. SMOTE
 def apply_smote(X_train: pd.DataFrame, y_train: pd.Series):
     """
-    Apply SMOTE to the TRAINING SET ONLY to prevent overlap leakage.
+    The function applies SMOTE strictly to the training set to achieve a 1:1 class balance.
     """
     before_legit = (y_train == 0).sum()
     before_fraud = (y_train == 1).sum()
@@ -137,38 +92,31 @@ def apply_smote(X_train: pd.DataFrame, y_train: pd.Series):
     after_legit = (y_resampled == 0).sum()
     after_fraud = (y_resampled == 1).sum()
 
-    info(
-        f"Before SMOTE — Legitimate: {before_legit:,}  |  Fraud: {before_fraud:,}")
-    info(
-        f"After  SMOTE — Legitimate: {after_legit:,}  |  Fraud: {after_fraud:,}")
+    info(f"Before SMOTE — Legitimate: {before_legit:,}  |  Fraud: {before_fraud:,}")
+    info(f"After  SMOTE — Legitimate: {after_legit:,}  |  Fraud: {after_fraud:,}")
 
     return X_resampled, y_resampled
 
-# 6. full pipeline in one call
-
-
+# 5. Full pipeline
 def prepare_data(apply_smote_flag: bool = True):
     """
-    Run the full data preparation pipeline in sequence.
+    The function executes the full data preparation pipeline in chronological sequence.
     """
     step(1, 4, "Loading raw data")
     df = load_data()
-
-    step(2, 4, "Cleaning & Encoding")
+    
+    step(2, 4, "Cleaning & Encoding (Batsyas & Yaduwanshi, 2026)")
     df = clean_data(df)
 
-    step(3, 4, "Engineering Features")
-    df = engineer_features(df)
+    step(3, 4, "Splitting Data (90:10 Stratified)")
+    X_train, X_test, y_train, y_test, amounts_train, amounts_test = split_data(df)
 
-    step(4, 4, "Splitting & Oversampling")
-    X_train, X_test, y_train, y_test, amounts_train, amounts_test = split_data(
-        df)
-
+    step(4, 4, "Resampling")
     if apply_smote_flag:
         X_train_res, y_train_res = apply_smote(X_train, y_train)
     else:
         X_train_res, y_train_res = X_train, y_train
-        warn("SMOTE skipped — using raw imbalanced training set")
+        warn("SMOTE skipped — utilizing the raw imbalanced training set.")
 
     success("Data Preparation Pipeline Complete.")
     return X_train, X_test, y_train, y_test, amounts_train, amounts_test, X_train_res, y_train_res

@@ -1,65 +1,86 @@
 """
 xgboost_baseline.py
-Phase 1: Standard XGBoost Binary Classifier — Base Model
+===================
+Phase 1a: Standard XGBoost Classifier (Raw Imbalanced Data)
+=======================================================
 
+The script trains a cost-blind XGBoost baseline without SMOTE, 
+directly replicating the methodology and results found in Section 3.1.4 
+and Table 4 of Batsyas and Yaduwanshi (2026).
 """
 
-from xgboost import XGBClassifier
-import warnings
+import os
+import sys
+import joblib
 
-# Import our custom architectural modules
-from config import XGBOOST_PARAMS
-from utils import ensure_dirs, section, step, success
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+
+from xgboost import XGBClassifier
+
+from config import XGBOOST_PARAMS, MODELS_DIR
+from utils import section, step, info, success, ensure_dirs
 from data_prep import prepare_data
 from evaluation import evaluate
-from utils import save_model
 
-warnings.filterwarnings('ignore')
+TOTAL_STEPS  = 4
+PHASE_LABEL  = "Phase 1a — Base XGBoost (No SMOTE)"
+METRICS_FILE = "base_model_no_smote_metrics.json"
+PLOT_SUBDIR  = "phase1a"
+MODEL_FILE   = os.path.join(MODELS_DIR, "base_xgboost_no_smote.pkl")
 
-def run_baseline():
-    section("PHASE 1: STANDARD XGBOOST BASELINE")
-    
+def main():
     ensure_dirs()
-    
-    # 1. Execute Data Pipeline
-    # One single call to the full data preparation pipeline.
-    (X_train, X_test, y_train, y_test, 
-     amounts_train, amounts_test, 
-     X_train_res, y_train_res) = prepare_data(apply_smote_flag=True)
-    
-    # 2. Initialize Model
-    step(5, 7, "Initializing standard XGBoost classifier")
-    # ** unpacks the dictionary from config.py directly into the model
+    section("PHASE 1A: XGBOOST BASELINE (NO SMOTE)")
+    print(f"  Reference: Batsyas and Yaduwanshi (2026), Section 3.1.4")
+    print(f"  Purpose: Establish the true academic baseline on imbalanced data.")
+
+    # Step 1: The algorithm prepares the data, explicitly skipping SMOTE.
+    step(1, TOTAL_STEPS, "Loading and preparing data")
+    (X_train, X_test,
+     y_train, y_test,
+     amounts_train, amounts_test,
+     X_train_res, y_train_res) = prepare_data(apply_smote_flag=False)
+
+    # Step 2: The script initializes and trains the standard XGBoost classifier.
+    step(2, TOTAL_STEPS, "Training standard XGBoost classifier")
+    info("The model is training on raw, imbalanced data using standard log-loss.")
+
     model = XGBClassifier(**XGBOOST_PARAMS)
-    
-    # 3. Train Model
-    step(6, 7, "Training XGBoost on SMOTE-balanced data")
     model.fit(
         X_train_res, y_train_res,
         eval_set=[(X_test, y_test)],
-        verbose=50  # Prints training progress every 50 trees
+        verbose=50
     )
-    
-    # Save the trained model weights
-    save_model(model, "base_xgboost.pkl")
-    
-    # 4. Evaluate Pipeline
-    step(7, 7, "Running evaluation and calculating Savings Score")
-    
-    # The evaluate function handles all standard metrics, the Savings Score math,
-    # prints the formatted console output, generates all charts, and saves the JSON.
+
+    joblib.dump(model, MODEL_FILE)
+    success(f"The model weights are saved: {MODEL_FILE}")
+
+    # Step 3: The script evaluates the model on the 10% holdout test set.
+    step(3, TOTAL_STEPS, "Evaluating on untouched test set")
     metrics = evaluate(
-        model=model,
-        X_test=X_test,
-        y_test=y_test,
-        amounts_test=amounts_test,
-        phase_label="Phase 1 — Base XGBoost",
-        metrics_filename="base_model_metrics.json",
-        subdir="phase1"
+        model            = model,
+        X_test           = X_test,
+        y_test           = y_test,
+        amounts_test     = amounts_test,
+        phase_label      = PHASE_LABEL,
+        metrics_filename = METRICS_FILE,
+        subdir           = PLOT_SUBDIR,
+        all_phases       = None
     )
-    
-    success("Phase 1 Baseline execution completed successfully.")
-    return metrics
+
+    # Step 4: The script generates the summary to compare with the reference paper.
+    step(4, TOTAL_STEPS, "Phase 1a complete")
+    std     = metrics["standard_metrics"]
+    savings = metrics["savings_score"]
+
+    section("PHASE 1A SUMMARY")
+    print(f"  Verify these metrics against Batsyas and Yaduwanshi (2026) Table 4:")
+    print(f"  F1-Score                 : {std['f1_score']:.4f}")
+    print(f"  Precision                : {std['precision']:.4f}")
+    print(f"  Recall                   : {std['recall']:.4f}")
+    print(f"\n  Savings Score (PRIMARY)  : {savings['savings_score_pct']:.4f}%")
+    print("=" * 62)
+    success("Phase 1a baseline execution completed successfully.")
 
 if __name__ == "__main__":
-    run_baseline()
+    main()
