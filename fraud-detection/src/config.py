@@ -11,7 +11,7 @@ REPORTS_DIR = ROOT_DIR / "reports"
 NOTEBOOKS_DIR = ROOT_DIR / "notebooks"
 
 # Input Data File
-PAYSIM_FILE = DATA_DIR / "paysim.csv"
+PAYSIM_FILE = DATA_DIR / "PS_20174392719_1491204439457_log.csv"
 
 # 2. Data Preparation Parameters
 # Locking the random state so the Train/Test split is exactly reproducible.
