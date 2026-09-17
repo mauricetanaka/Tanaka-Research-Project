@@ -1,0 +1,100 @@
+==============================================================
+  PHASE 2: GLOBAL EDCSL XGBOOST
+==============================================================
+
+[1/6] Loading and preparing data...
+
+[1/4] Loading raw data...
+    Loaded: 6,362,620 rows × 11 columns
+    Fraud rate: 0.1291% (8,213 fraudulent transactions)
+
+[2/4] Cleaning & Encoding (Batsyas & Yaduwanshi, 2026)...
+    Applied Label Encoding to 'type' column.
+    Final feature set contains 6 predictors.
+
+[3/4] Splitting Data (90:10 Stratified)...
+    Train set: 5,726,358 rows  |  Fraud: 7,392
+    Test set:  636,262 rows  |  Fraud: 821
+    ⚠️  The test set remains completely untouched to prevent data leakage.
+
+[4/4] Resampling...
+    Before SMOTE — Legitimate: 5,718,966  |  Fraud: 7,392
+    After  SMOTE — Legitimate: 5,718,966  |  Fraud: 5,718,966
+    ✅ Data Preparation Pipeline Complete.
+
+[2/6] Building EDCSL custom objective function...
+    The custom objective is built. Gradients are now weighted by transaction cost.
+
+[3/6] Training EDCSL XGBoost...
+    ✅ The model is saved: C:\Users\tanakam\Pictures\Tanaka-Research-Project\fraud-detection\models\phase2_edcsl_xgboost.pkl
+
+[4/6] Loading Phase 1 results for comparison...
+    The Phase 1 metrics successfully loaded.
+
+[5/6] Evaluating EDCSL Model...
+
+==============================================================
+  RESULTS — Phase 2 — Global EDCSL XGBoost
+==============================================================
+  ────────────────────────────────────────────────────────
+  STANDARD METRICS (cost-blind)
+  ────────────────────────────────────────────────────────
+  Accuracy   : 0.2747   ← misleading on imbalanced data
+  Precision  : 0.0018
+  Recall     : 1.0000
+  F1-Score   : 0.0035
+  ROC-AUC    : 0.8217
+  PR-AUC     : 0.0037   ← KEY METRIC
+
+  Confusion Matrix:
+                Predicted 0    Predicted 1
+  Actual 0  :       173,952        461,489   (TN / FP)
+  Actual 1  :             0            821   (FN / TP)
+
+  ────────────────────────────────────────────────────────
+  SAVINGS SCORE (Bahnsen et al., 2014) — PRIMARY METRIC
+  ────────────────────────────────────────────────────────
+  Ca (investigation cost)            : R50.00
+  Baseline cost (flag nothing)       : R1,142,384,905.60
+  FN loss (missed fraud)             : R           0.00
+  FP cost (false alarm overhead)     : R  23,074,450.00
+  Total model cost                   : R  23,074,450.00
+  Financial loss prevented           : R1,119,310,455.60
+
+  ┌──────────────────────────────────────────────────────┐
+  │  SAVINGS SCORE = 0.9798  (97.98%)               │
+  └──────────────────────────────────────────────────────┘
+
+                precision    recall  f1-score   support
+
+  Legitimate       1.00      0.27      0.43    635441
+       Fraud       0.00      1.00      0.00       821
+
+    accuracy                           0.27    636262
+   macro avg       0.50      0.64      0.22    636262
+weighted avg       1.00      0.27      0.43    636262
+
+    ✅ Saved plot: confusion_matrix.png
+    ✅ Saved plot: roc_curve.png
+    ✅ Saved plot: feature_importance.png
+    ✅ Saved plot: savings_score.png
+    ✅ Saved metrics: phase2_edcsl_metrics.json
+
+[6/6] Generating Phase Comparison Summary...
+
+  ──────────────────────────────────────────────────
+  PHASE 1 vs PHASE 2 COMPARISON
+  ──────────────────────────────────────────────────
+  Metric                                 Phase 1    Phase 2    Delta
+  ──────────────────────────────────────────────────
+  Savings Score (%)                      99.9060    97.9802 -1.9258
+  F1-Score                                0.1318     0.0035 -0.1283
+  Precision                               0.0706     0.0018 -0.0688
+  Recall                                  0.9939     1.0000 + 0.0061
+  FN cost (R millions)                    0.5368     0.0000 -0.5368
+  FP cost (R thousands)                 537.1000 23074.4500 +22537.3500
+
+  Savings Score delta: -1.9258%
+  ⚠️  Baseline outperforms EDCSL — model is sacrificing too much recall
+==============================================================
+    ✅ The Phase 2 EDCSL execution completed successfully.

@@ -1,0 +1,93 @@
+==============================================================
+  PHASE 1B: XGBOOST BASELINE (WITH SMOTE)
+==============================================================
+  Reference: Batsyas and Yaduwanshi (2026), Section 3.3
+  Purpose: Establish the cost-blind baseline on a balanced dataset.
+
+[1/4] Loading and preparing data...
+
+[1/4] Loading raw data...
+    Loaded: 6,362,620 rows × 11 columns
+    Fraud rate: 0.1291% (8,213 fraudulent transactions)
+
+[2/4] Cleaning & Encoding (Batsyas & Yaduwanshi, 2026)...
+    Applied Label Encoding to 'type' column.
+    Final feature set contains 6 predictors.
+
+[3/4] Splitting Data (90:10 Stratified)...
+    Train set: 5,726,358 rows  |  Fraud: 7,392
+    Test set:  636,262 rows  |  Fraud: 821
+    ⚠️  The test set remains completely untouched to prevent data leakage.
+
+[4/4] Resampling...
+    Before SMOTE — Legitimate: 5,718,966  |  Fraud: 7,392
+    After  SMOTE — Legitimate: 5,718,966  |  Fraud: 5,718,966
+    ✅ Data Preparation Pipeline Complete.
+
+[2/4] Training standard XGBoost classifier...
+    The model is training on SMOTE-balanced data using standard log-loss.
+[0]     validation_0-logloss:0.61861
+[50]    validation_0-logloss:0.07731
+[99]    validation_0-logloss:0.04265
+    ✅ The model weights are saved: C:\Users\tanakam\Pictures\Tanaka-Research-Project\fraud-detection\models\base_xgboost_smote.pkl
+
+[3/4] Evaluating on untouched test set...
+
+==============================================================
+  RESULTS — Phase 1b — Base XGBoost (With SMOTE)
+==============================================================
+  ────────────────────────────────────────────────────────
+  STANDARD METRICS (cost-blind)
+  ────────────────────────────────────────────────────────
+  Accuracy   : 0.9831   ← misleading on imbalanced data
+  Precision  : 0.0706
+  Recall     : 0.9939
+  F1-Score   : 0.1318
+  ROC-AUC    : 0.9991
+  PR-AUC     : 0.8413   ← KEY METRIC
+
+  Confusion Matrix:
+                Predicted 0    Predicted 1
+  Actual 0  :       624,699         10,742   (TN / FP)
+  Actual 1  :             5            816   (FN / TP)
+
+  ────────────────────────────────────────────────────────
+  SAVINGS SCORE (Bahnsen et al., 2014) — PRIMARY METRIC
+  ────────────────────────────────────────────────────────
+  Ca (investigation cost)            : R50.00
+  Baseline cost (flag nothing)       : R1,142,384,905.60
+  FN loss (missed fraud)             : R     536,773.94
+  FP cost (false alarm overhead)     : R     537,100.00
+  Total model cost                   : R   1,073,873.94
+  Financial loss prevented           : R1,141,311,031.66
+
+  ┌──────────────────────────────────────────────────────┐
+  │  SAVINGS SCORE = 0.9991  (99.91%)               │
+  └──────────────────────────────────────────────────────┘
+
+                precision    recall  f1-score   support
+
+  Legitimate       1.00      0.98      0.99    635441
+       Fraud       0.07      0.99      0.13       821
+
+    accuracy                           0.98    636262
+   macro avg       0.54      0.99      0.56    636262
+weighted avg       1.00      0.98      0.99    636262
+
+    ✅ Saved plot: confusion_matrix.png
+    ✅ Saved plot: roc_curve.png
+    ✅ Saved plot: feature_importance.png
+    ✅ Saved plot: savings_score.png
+    ✅ Saved metrics: base_model_smote_metrics.json
+
+[4/4] Phase 1b complete...
+
+==============================================================
+  PHASE 1B SUMMARY
+==============================================================
+  Savings Score (PRIMARY)  : 99.9060%
+  F1-Score                 : 0.1318
+  Precision                : 0.0706
+  Recall                   : 0.9939
+==============================================================
+    ✅ Phase 1b baseline execution completed successfully.
