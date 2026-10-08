@@ -42,6 +42,3 @@ results/plots/*.png
 # ==========================================
 # Temporary source files
 # ==========================================
-
-src/ulb_xgboost_baseline.py
-src/ulb_data_prep.py

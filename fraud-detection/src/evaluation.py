@@ -218,7 +218,6 @@ def evaluate(model, X_test, y_test, amounts_test,
     y_proba  = model.predict_proba(X_test)[:, 1]
     amounts  = np.array(amounts_test)
     
-    # Extract dynamic feature names from the DataFrame
     feature_names = list(X_test.columns)
 
     # ── Standard metrics ──
@@ -231,28 +230,34 @@ def evaluate(model, X_test, y_test, amounts_test,
 
     # ── Console output ──
     section(f"RESULTS — {phase_label}")
+    
     print(f"  {'─'*56}")
-    print(f"  STANDARD METRICS (cost-blind)")
+    print(f"  1. STANDARD METRICS (cost-blind)")
     print(f"  {'─'*56}")
-    print(f"  Accuracy   : {std['accuracy']:.4f}   ← misleading on imbalanced data")
+    print(f"  Accuracy   : {std['accuracy']:.4f}")
     print(f"  Precision  : {std['precision']:.4f}")
     print(f"  Recall     : {std['recall']:.4f}")
     print(f"  F1-Score   : {std['f1_score']:.4f}")
     print(f"  ROC-AUC    : {std['roc_auc']:.4f}")
-    print(f"  PR-AUC     : {std['pr_auc']:.4f}   ← KEY METRIC")
-    print(f"\n  Confusion Matrix:")
-    print(f"                Predicted 0    Predicted 1")
-    print(f"  Actual 0  :  {tn:>12,}   {fp:>12,}   (TN / FP)")
-    print(f"  Actual 1  :  {fn:>12,}   {tp:>12,}   (FN / TP)")
+    print(f"  PR-AUC     : {std['pr_auc']:.4f}")
+    
     print(f"\n  {'─'*56}")
-    print(f"  SAVINGS SCORE (Bahnsen et al., 2014) — PRIMARY METRIC")
+    print(f"  2. TRANSACTION LEDGER (Test Set Holds {len(y_test):,} Rows)")
+    print(f"  {'─'*56}")
+    print(f"  Actual Frauds in Test Set          : {savings['total_fraud_transactions']:,}")
+    print(f"  Frauds Caught (True Positives)     : {tp:,}")
+    print(f"  Frauds Missed (False Negatives)    : {fn:,}")
+    print(f"  Innocent Customers Flagged (FP)    : {fp:,}")
+
+    print(f"\n  {'─'*56}")
+    print(f"  3. FINANCIAL SAVINGS SCORE (Bahnsen et al., 2014)")
     print(f"  {'─'*56}")
     print(f"  Ca (investigation cost)            : R{savings['Ca_rands']:,.2f}")
-    print(f"  Baseline cost (flag nothing)       : R{savings['cost_baseline_rands']:>15,.2f}")
-    print(f"  FN loss (missed fraud)             : R{savings['cost_fn_rands']:>15,.2f}")
-    print(f"  FP cost (false alarm overhead)     : R{savings['cost_fp_rands']:>15,.2f}")
-    print(f"  Total model cost                   : R{savings['cost_model_rands']:>15,.2f}")
-    print(f"  Financial loss prevented           : R{savings['financial_loss_prevented_rands']:>15,.2f}")
+    print(f"  Baseline loss (missed all fraud)   : R{savings['cost_baseline_rands']:>15,.2f}")
+    print(f"  Financial Value of Missed Fraud    : R{savings['cost_fn_rands']:>15,.2f}")
+    print(f"  Financial Cost of False Alarms     : R{savings['cost_fp_rands']:>15,.2f}")
+    print(f"  Total operational model cost       : R{savings['cost_model_rands']:>15,.2f}")
+    print(f"  Total Financial Loss Prevented     : R{savings['financial_loss_prevented_rands']:>15,.2f}")
     print(f"\n  ┌──────────────────────────────────────────────────────┐")
     print(f"  │  SAVINGS SCORE = {savings['savings_score']:.4f}  ({savings['savings_score_pct']:.2f}%)               │")
     print(f"  └──────────────────────────────────────────────────────┘")
