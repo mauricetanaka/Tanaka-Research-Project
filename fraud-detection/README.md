@@ -189,7 +189,7 @@ python src/run_mcnemars.py
 
 ## 9. Dissertation Citation
 
-Munyoro, T.M., 2026. Beyond Binary Classification: Latent Behavioural Segmentation and Cost-Sensitive Machine Learning for Credit Card Fraud Detection: source code [Online]. Available at: https://github.com/[username]/[repository] (release v1.0-dissertation).
+Munyoro, T.M., 2026. *Beyond Binary Classification: Latent Behavioural Segmentation and Cost-Sensitive Machine Learning for Credit Card Fraud Detection: source code* [Online]. Available at: https://github.com/mauricetanaka/Tanaka-Research-Project/tree/712f23af5778c87d81b936f353282ef43cd1f99c
 
 ---
 
