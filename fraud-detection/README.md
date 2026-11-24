@@ -72,7 +72,7 @@ Segmentation without cost-sensitivity (a cluster-wise cost-blind model) was not 
 | Split | 80:20 stratified; train 227,845 (394 fraud), test 56,962 (98 fraud) |
 | Classifier | XGBoost, max_depth=3, n_estimators=50 |
 | Seed | random_state=42 for split, SMOTE, K-Means and XGBoost |
-| SMOTE | Training data only. In Phase 3b it is applied inside each cluster, after clustering |
+| SMOTE | Training data only. In Phase 3b it is applied to the training set prior to clustering|
 | Clustering | K-Means on V1-V28, k = 5, fitted on training data only |
 | Inference (Phase 3) | Each test transaction goes to its nearest training centroid and is scored by that cluster's model |
 | Administrative cost | Ca = R50 per flagged transaction (fixed experimental assumption) |
